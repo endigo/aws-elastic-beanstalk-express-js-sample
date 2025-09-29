@@ -23,7 +23,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install --save'
+                sh 'npm ci'
             }
         }
 
