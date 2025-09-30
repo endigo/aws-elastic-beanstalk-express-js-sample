@@ -2,12 +2,12 @@ pipeline {
     agent {
         docker {
             image 'node:16-alpine'
-            args '-u root:root -v /certs/client:/certs/client:ro --network project2-compose_jenkins'
+            args '-u root:root -v /certs/client:/certs/client:ro'
         }
     }
 
     environment {
-        DOCKER_HOST = 'tcp://docker:2376'
+        DOCKER_HOST = 'tcp://172.17.0.1:2376'
         DOCKER_TLS_VERIFY = '1'
         DOCKER_CERT_PATH = '/certs/client'
         DOCKER_REGISTRY = 'docker.io'
