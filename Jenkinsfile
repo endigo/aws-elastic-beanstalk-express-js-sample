@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        DOCKER_HOST = 'tcp://172.17.0.1:2376'
+        DOCKER_HOST = 'tcp://docker:2376'
         DOCKER_TLS_VERIFY = '1'
         DOCKER_CERT_PATH = '/certs/client'
         DOCKER_REGISTRY = 'docker.io'
