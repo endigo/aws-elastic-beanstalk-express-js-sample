@@ -46,12 +46,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    sh '''
-                        echo "Installing dependencies..."
-                        npm cache clean --force || true
-                        rm -rf node_modules package-lock.json || true
-                        npm install --verbose
-                    '''
+                    sh 'npm ci'
                 }
             }
         }
