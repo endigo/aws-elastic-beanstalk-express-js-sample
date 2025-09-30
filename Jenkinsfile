@@ -2,11 +2,14 @@ pipeline {
     agent {
         docker {
             image 'node:16-alpine'
-            args '-u root:root'
+            args '-u root:root -v /certs/client:/certs/client:ro --network project2-compose_jenkins'
         }
     }
 
     environment {
+        DOCKER_HOST = 'tcp://docker:2376'
+        DOCKER_TLS_VERIFY = '1'
+        DOCKER_CERT_PATH = '/certs/client'
         DOCKER_REGISTRY = 'docker.io'
         DOCKER_IMAGE_NAME = 'aws-elastic-beanstalk-express-app'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
@@ -35,6 +38,13 @@ pipeline {
                 sh '''
                     echo "Node version: $(node --version)"
                     echo "NPM version: $(npm --version)"
+
+                    # Install Docker CLI
+                    apk add --no-cache docker-cli
+
+                    # Verify Docker connectivity
+                    docker version
+
                     npm config set registry https://registry.npmjs.org/
                     npm config set fetch-retry-mintimeout 20000
                     npm config set fetch-retry-maxtimeout 120000
