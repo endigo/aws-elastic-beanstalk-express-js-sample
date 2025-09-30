@@ -74,6 +74,9 @@ pipeline {
             }
             steps {
                 script {
+                    def snykInstallFailed = false
+                    def snykResult = 0
+
                     try {
                         // Install Snyk CLI
                         sh '''
@@ -82,9 +85,15 @@ pipeline {
                             chmod +x /usr/local/bin/snyk
                             snyk auth ${SNYK_TOKEN}
                         '''
+                    } catch (Exception e) {
+                        echo "Snyk CLI installation failed: ${e.getMessage()}"
+                        echo "Skipping security scan..."
+                        snykInstallFailed = true
+                    }
 
+                    if (!snykInstallFailed) {
                         // Run Snyk test and capture result
-                        def snykResult = sh(
+                        snykResult = sh(
                             script: 'snyk test --severity-threshold=${SEVERITY_THRESHOLD} --json > snyk-report.json || true',
                             returnStatus: true
                         )
@@ -96,9 +105,6 @@ pipeline {
                         if (snykResult != 0) {
                             error "Security vulnerabilities found with severity ${SEVERITY_THRESHOLD} or higher. Pipeline failed."
                         }
-                    } catch (Exception e) {
-                        echo "Snyk security scan failed: ${e.getMessage()}"
-                        echo "Continuing pipeline execution..."
                     }
                 }
             }
@@ -109,8 +115,8 @@ pipeline {
                 script {
                     // Check if Dockerfile exists
                     if (fileExists('Dockerfile')) {
-                        docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
-                        docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:latest")
+                        def customImage = docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        customImage.tag('latest')
                     } else {
                         echo "No Dockerfile found, creating a simple one..."
                         writeFile file: 'Dockerfile', text: '''
@@ -122,8 +128,8 @@ COPY . .
 EXPOSE 3000
 CMD ["npm", "start"]
 '''
-                        docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
-                        docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:latest")
+                        def customImage = docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        customImage.tag('latest')
                     }
                 }
             }
