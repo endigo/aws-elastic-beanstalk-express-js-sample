@@ -39,9 +39,6 @@ pipeline {
                     echo "Node version: $(node --version)"
                     echo "NPM version: $(npm --version)"
 
-                    # Install Docker CLI
-                    apk add --no-cache docker-cli
-
                     # Verify Docker connectivity
                     docker version
 
