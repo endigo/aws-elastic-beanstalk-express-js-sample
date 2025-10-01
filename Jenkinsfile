@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'oven/bun:1'
+            image 'oven/bun:1-alpine'
             args '-u root:root -v /certs/client:/certs/client:ro -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
