@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'node:16-alpine'
-            args '-u root:root -v /certs/client:/certs/client:ro'
+            args '-u root:root -v /certs/client:/certs/client:ro -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
@@ -38,6 +38,9 @@ pipeline {
                 sh '''
                     echo "Node version: $(node --version)"
                     echo "NPM version: $(npm --version)"
+
+                    # Install Docker CLI
+                    apk add --no-cache docker-cli
 
                     # Verify Docker connectivity
                     docker version
