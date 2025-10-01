@@ -42,7 +42,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install --only=production'
+                sh 'npm ci'
             }
         }
 
@@ -105,7 +105,7 @@ pipeline {
                 script {
                     // Check if Dockerfile exists
                     if (fileExists('Dockerfile')) {
-                        def customImage = docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
                         customImage.tag('latest')
                     } else {
                         echo "No Dockerfile found, creating a simple one..."
@@ -118,7 +118,7 @@ COPY . .
 EXPOSE 3000
 CMD ["npm", "start"]
 '''
-                        def customImage = docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
                         customImage.tag('latest')
                     }
                 }
@@ -133,7 +133,7 @@ CMD ["npm", "start"]
                 script {
                     try {
                         // Scan the Docker container for vulnerabilities
-                        sh 'snyk container test ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} --severity-threshold=${SEVERITY_THRESHOLD} || true'
+                        sh 'snyk container test ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} --severity-threshold=${SEVERITY_THRESHOLD} || true'
                     } catch (Exception e) {
                         echo "Container security scan failed: ${e.getMessage()}"
                         echo "Continuing pipeline execution..."
@@ -150,8 +150,8 @@ CMD ["npm", "start"]
                 script {
                     try {
                         docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS_ID) {
-                            docker.image("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}").push()
-                            docker.image("${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:latest").push()
+                            docker.image("${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}").push()
+                            docker.image("${DOCKER_IMAGE_NAME}:latest").push()
                         }
                     } catch (Exception e) {
                         echo "Docker push failed: ${e.getMessage()}"
@@ -164,8 +164,8 @@ CMD ["npm", "start"]
         stage('Clean Up') {
             steps {
                 sh """
-                    docker rmi ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} || true
-                    docker rmi ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:latest || true
+                    docker rmi ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} || true
+                    docker rmi ${DOCKER_IMAGE_NAME}:latest || true
                     docker system prune -f || true
                 """
             }
