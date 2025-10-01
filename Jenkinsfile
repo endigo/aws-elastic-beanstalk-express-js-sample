@@ -11,7 +11,7 @@ pipeline {
         DOCKER_TLS_VERIFY = '1'
         DOCKER_CERT_PATH = '/certs/client'
         DOCKER_REGISTRY = 'docker.io'
-        DOCKER_IMAGE_NAME = 'aws-elastic-beanstalk-express-app'
+        DOCKER_IMAGE_NAME = 'endigo/aws-elastic-beanstalk-express-app'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         SNYK_TOKEN = credentials('snyk-api-token')
         SEVERITY_THRESHOLD = 'high'
@@ -29,35 +29,20 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                sh 'ls -la'
             }
         }
 
-        stage('Setup Environment') {
+        stage('Install Docker CLI') {
             steps {
                 sh '''
-                    echo "Node version: $(node --version)"
-                    echo "NPM version: $(npm --version)"
-
-                    # Install Docker CLI
                     apk add --no-cache docker-cli
-
-                    # Verify Docker connectivity
-                    docker version
-
-                    npm config set registry https://registry.npmjs.org/
-                    npm config set fetch-retry-mintimeout 20000
-                    npm config set fetch-retry-maxtimeout 120000
-                    npm config set fetch-retries 3
                 '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    sh 'npm ci'
-                }
+                sh 'npm install --only=production'
             }
         }
 
