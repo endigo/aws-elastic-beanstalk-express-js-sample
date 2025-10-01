@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'node:16-alpine'
+            image 'oven/bun:1'
             args '-u root:root -v /certs/client:/certs/client:ro -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
@@ -15,8 +15,6 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         SNYK_TOKEN = credentials('snyk-api-token')
         SEVERITY_THRESHOLD = 'high'
-        npm_config_cache = 'npm-cache'
-        npm_config_prefer_offline = 'true'
     }
 
     options {
@@ -35,14 +33,14 @@ pipeline {
         stage('Install Docker CLI') {
             steps {
                 sh '''
-                    apk add --no-cache docker-cli
+                    apk add --no-cache docker-cli curl
                 '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm ci'
+                sh 'bun install --frozen-lockfile'
             }
         }
 
@@ -50,7 +48,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'npm test'
+                        sh 'bun test'
                     } catch (Exception e) {
                         echo 'No test script found in package.json, skipping tests'
                     }
@@ -70,7 +68,6 @@ pipeline {
                     try {
                         // Install Snyk CLI
                         sh '''
-                            apk add --no-cache curl
                             curl -fsSL https://static.snyk.io/cli/latest/snyk-alpine -o /usr/local/bin/snyk
                             chmod +x /usr/local/bin/snyk
                             snyk auth ${SNYK_TOKEN}
@@ -105,19 +102,6 @@ pipeline {
                 script {
                     // Check if Dockerfile exists
                     if (fileExists('Dockerfile')) {
-                        def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
-                        customImage.tag('latest')
-                    } else {
-                        echo "No Dockerfile found, creating a simple one..."
-                        writeFile file: 'Dockerfile', text: '''
-FROM node:16-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
-'''
                         def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
                         customImage.tag('latest')
                     }

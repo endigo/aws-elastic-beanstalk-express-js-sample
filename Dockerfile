@@ -1,40 +1,38 @@
-FROM node:16-alpine
-
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
-
-# Create app directory
+# use the official Bun image
+# see all versions at https://hub.docker.com/r/oven/bun/tags
+FROM oven/bun:1 AS base
 WORKDIR /usr/src/app
 
-# Create node user and group with specific UID/GID for consistency
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S expressjs -u 1001
+# install dependencies into temp directory
+# this will cache them and speed up future builds
+FROM base AS install
+RUN mkdir -p /temp/dev
+COPY package.json bun.lock /temp/dev/
+RUN cd /temp/dev && bun install --frozen-lockfile
 
-# Copy package files
-COPY package*.json ./
+# install with --production (exclude devDependencies)
+RUN mkdir -p /temp/prod
+COPY package.json bun.lock /temp/prod/
+RUN cd /temp/prod && bun install --frozen-lockfile --production
 
-# Install dependencies with better caching and error handling
-RUN npm ci --only=production --no-audit --no-fund && \
-    npm cache clean --force
-
-# Copy application code
+# copy node_modules from temp directory
+# then copy all (non-ignored) project files into the image
+FROM base AS prerelease
+COPY --from=install /temp/dev/node_modules node_modules
 COPY . .
 
-# Change ownership of the app directory to expressjs user
-RUN chown -R expressjs:nodejs /usr/src/app
+# [optional] tests & build
+ENV NODE_ENV=production
+RUN bun test
+RUN bun run build
 
-# Switch to non-root user for security
-USER expressjs
+# copy production dependencies and source code into final image
+FROM base AS release
+COPY --from=install /temp/prod/node_modules node_modules
+COPY --from=prerelease /usr/src/app/index.ts .
+COPY --from=prerelease /usr/src/app/package.json .
 
-# Expose the port the app runs on
-EXPOSE 3000
-
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start the application
-CMD ["node", "app.js"]
+# run the app
+USER bun
+EXPOSE 8000/tcp
+ENTRYPOINT [ "bun", "run", "index.ts" ]
