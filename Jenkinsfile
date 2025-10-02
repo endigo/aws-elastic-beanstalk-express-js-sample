@@ -117,7 +117,7 @@ pipeline {
                 script {
                     try {
                         // Scan the Docker container for vulnerabilities
-                        sh 'snyk container test ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} --severity-threshold=${SEVERITY_THRESHOLD} || true'
+                        sh "snyk container test ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} --severity-threshold=${SEVERITY_THRESHOLD} || true"
                     } catch (Exception e) {
                         echo "Container security scan failed: ${e.getMessage()}"
                         echo "Continuing pipeline execution..."
