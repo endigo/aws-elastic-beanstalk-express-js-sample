@@ -68,8 +68,7 @@ pipeline {
                     try {
                         // Install Snyk CLI
                         sh '''
-                            curl -fsSL https://static.snyk.io/cli/latest/snyk-alpine -o /usr/local/bin/snyk
-                            chmod +x /usr/local/bin/snyk
+                            bun add snyk
                             snyk auth ${SNYK_TOKEN}
                         '''
                     } catch (Exception e) {
