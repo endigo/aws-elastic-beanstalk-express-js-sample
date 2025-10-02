@@ -10,7 +10,7 @@ pipeline {
         DOCKER_HOST = 'tcp://docker:2376'
         DOCKER_TLS_VERIFY = '1'
         DOCKER_CERT_PATH = '/certs/client'
-        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_REGISTRY = 'index.docker.io'
         DOCKER_IMAGE_NAME = 'endigo/isec6000-assignment-2'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         SNYK_TOKEN = credentials('snyk-api-token')
