@@ -30,14 +30,6 @@ pipeline {
             }
         }
 
-        // stage('Install Docker CLI') {
-        //     steps {
-        //         sh '''
-        //             apk add --no-cache docker-cli curl
-        //         '''
-        //     }
-        // }
-
         stage('Install Dependencies') {
             steps {
                 sh 'bun install --frozen-lockfile'
@@ -66,9 +58,6 @@ pipeline {
                     def snykResult = 0
 
                     try {
-                        // Install Snyk CLI
-                            // curl -fsSL https://static.snyk.io/cli/latest/snyk-alpine -o /usr/local/bin/snyk
-                            // chmod +x /usr/local/bin/snyk
                         sh '''
                             snyk auth ${SNYK_TOKEN}
                         '''
