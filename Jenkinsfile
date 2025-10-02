@@ -68,7 +68,7 @@ pipeline {
                     try {
                         // Install Snyk CLI
                         sh '''
-                            bun add snyk
+                            bun install -g snyk
                             snyk auth ${SNYK_TOKEN}
                         '''
                     } catch (Exception e) {
