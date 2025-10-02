@@ -125,14 +125,15 @@ pipeline {
                     echo "==== STAGE: Build Docker Image ===="
                     echo "Image name: ${DOCKER_IMAGE_NAME}"
                     echo "Build number: ${env.BUILD_NUMBER}"
+                    echo "Git Commit: ${env.GIT_COMMIT}"
 
                     // Check if Dockerfile exists
                     if (fileExists('Dockerfile')) {
                         echo "Building Docker image..."
-                        def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}")
+                        def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
                         customImage.tag('latest')
                         echo "==== Docker image built successfully ===="
-                        echo "Tagged as: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        echo "Tagged as: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                         echo "Tagged as: ${DOCKER_IMAGE_NAME}:latest"
                     } else {
                         echo "WARNING: Dockerfile not found, skipping build"
@@ -148,12 +149,12 @@ pipeline {
             steps {
                 script {
                     echo "==== STAGE: Container Security Scan ===="
-                    echo "Scanning image: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo "Scanning image: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                     echo "Severity threshold: ${SEVERITY_THRESHOLD}"
 
                     try {
                         // Scan the Docker container for vulnerabilities
-                        sh "snyk container test ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} --severity-threshold=${SEVERITY_THRESHOLD} --json > snyk-container-report.json 2>&1 | tee snyk-container-scan.log || true"
+                        sh "snyk container test ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT} --severity-threshold=${SEVERITY_THRESHOLD} --json > snyk-container-report.json 2>&1 | tee snyk-container-scan.log || true"
                         echo "==== Container security scan completed ===="
                     } catch (Exception e) {
                         echo "Container security scan failed: ${e.getMessage()}"
@@ -176,11 +177,11 @@ pipeline {
                     try {
                         echo "Pushing image to registry..."
                         docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS_ID) {
-                            docker.image("${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}").push()
+                            docker.image("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}").push()
                             docker.image("${DOCKER_IMAGE_NAME}:latest").push()
                         }
                         echo "==== Images pushed successfully ===="
-                        echo "Pushed: ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                        echo "Pushed: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
                         echo "Pushed: ${DOCKER_IMAGE_NAME}:latest"
                     } catch (Exception e) {
                         echo "Docker push failed: ${e.getMessage()}"
@@ -197,7 +198,7 @@ pipeline {
                     echo "Removing local Docker images..."
                 }
                 sh """
-                    docker rmi ${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER} || true
+                    docker rmi ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT} || true
                     docker rmi ${DOCKER_IMAGE_NAME}:latest || true
                     docker system prune -f || true
                 """
