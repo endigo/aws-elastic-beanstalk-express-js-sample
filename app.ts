@@ -1,15 +1,15 @@
 import express from "express";
 
 const app = express();
-const PORT = 8000;
+const PORT = 8080;
 
-app.get("/", (req, res) => {
-    res.send("Hello from Express on Bun!");
+app.get("/", (_, res) => {
+    res.send("Hello World!");
 });
 
 if (require.main === module) {
     app.listen(PORT, () => {
-        console.log(`Express server listening on http://localhost:${PORT}`);
+        console.log(`App running on http://localhost:${PORT}`);
     });
 }
 

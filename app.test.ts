@@ -1,5 +1,6 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import request from "supertest";
+
 import app from "./app";
 
 describe("Express Application", () => {
@@ -11,7 +12,7 @@ describe("Express Application", () => {
 
         it("should return correct message", async () => {
             const response = await request(app).get("/");
-            expect(response.text).toBe("Hello from Express on Bun!");
+            expect(response.text).toBe("Hello World!");
         });
 
         it("should have text/html content type", async () => {
@@ -27,3 +28,4 @@ describe("Express Application", () => {
         });
     });
 });
+
