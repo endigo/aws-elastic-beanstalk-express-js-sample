@@ -1,7 +1,8 @@
 pipeline {
     agent {
         docker {
-            image 'endigo/isec6000-assignment-2:base'
+            image 'oven/bun:1-alpine'
+            // image 'endigo/isec6000-assignment-2:base'
             args '-u root:root -v /certs/client:/certs/client:ro -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
@@ -43,6 +44,19 @@ pipeline {
                     echo "Commit: ${env.GIT_COMMIT}"
                     echo "==== Checkout completed successfully ===="
                 }
+            }
+        }
+
+        stage('Install Docker-Cli and curl') {
+            steps {
+                sh 'apk add --no-cache curl docker-cli'
+            }
+        }
+
+        stage('Install Snyk') {
+            steps {
+                sh 'curl -fsSL https://static.snyk.io/cli/latest/snyk-alpine -o /usr/local/bin/snyk'
+                sh 'chmod +x /usr/local/bin/snyk'
             }
         }
 

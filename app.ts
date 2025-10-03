@@ -3,9 +3,7 @@ import express from "express";
 const app = express();
 const PORT = 8000;
 
-app.get("/", (_, res) => {
-    res.send("Hello World!");
-});
+app.get("/", (_, res) => res.send("Hello World!"));
 
 if (require.main === module) {
     app.listen(PORT, () => {
