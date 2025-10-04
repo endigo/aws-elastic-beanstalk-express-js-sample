@@ -73,20 +73,15 @@ pipeline {
                 script {
                     // Log repository information for traceability
                     echo "==== STAGE: Checkout ===="
+                    env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    env.GIT_BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+
                     echo "Repository: ${env.GIT_URL}"
                     echo "Branch: ${env.GIT_BRANCH}"
                 }
                 // Clone repository using SCM configuration from jenkins-casc.yaml
                 checkout scm
                 script {
-                    // Capture git information since skipDefaultCheckout() was used
-                    // This ensures we have commit hash and branch name for image tagging
-                    env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                    env.GIT_BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-
-                    // Log commit hash for build reproducibility and auditing
-                    echo "Commit: ${env.GIT_COMMIT}"
-                    echo "Branch: ${env.GIT_BRANCH}"
                     echo "==== Checkout completed successfully ===="
                 }
             }
