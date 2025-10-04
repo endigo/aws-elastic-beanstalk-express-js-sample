@@ -56,7 +56,18 @@ pipeline {
 
     // Stages - sequential execution of pipeline steps
     stages {
-        // Stage 1: Checkout source code from version control
+        // Stage 1: Install required system tools
+        stage('Install System Tools') {
+            steps {
+                // Install required tools in Alpine container
+                // git: Required for capturing commit information after checkout
+                // docker-cli: Required for building and managing Docker images
+                // curl: Required for downloading Snyk CLI
+                // --no-cache: Prevents package cache from being stored, reducing image size
+                sh 'apk add --no-cache git curl docker-cli'
+            }
+        }
+        // Stage 2: Checkout source code from version control
         stage('Checkout') {
             steps {
                 script {
@@ -68,26 +79,11 @@ pipeline {
                 // Clone repository using SCM configuration from jenkins-casc.yaml
                 checkout scm
                 script {
-                    // Capture git information since skipDefaultCheckout() was used
-                    env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                    env.GIT_BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                     // Log commit hash for build reproducibility and auditing
                     echo "Commit: ${env.GIT_COMMIT}"
                     echo "Branch: ${env.GIT_BRANCH}"
                     echo "==== Checkout completed successfully ===="
                 }
-            }
-        }
-
-        // Stage 2: Install required system tools
-        stage('Install System Tools') {
-            steps {
-                // Install required tools in Alpine container
-                // git: Required for capturing commit information after checkout
-                // docker-cli: Required for building and managing Docker images
-                // curl: Required for downloading Snyk CLI
-                // --no-cache: Prevents package cache from being stored, reducing image size
-                sh 'apk add --no-cache git curl docker-cli'
             }
         }
 
