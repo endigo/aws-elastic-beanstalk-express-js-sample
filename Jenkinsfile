@@ -77,11 +77,16 @@ pipeline {
                 // Clone repository using SCM configuration from jenkins-casc.yaml
                 checkout scm
                 script {
+                    // Capture full commit hash for complete traceability
                     env.GIT_COMMIT = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    // Capture short commit hash (7 chars) for readable Docker image tags
+                    env.GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short=7 HEAD', returnStdout: true).trim()
                     env.GIT_BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
 
                     echo "Repository: ${env.GIT_URL}"
                     echo "Branch: ${env.GIT_BRANCH}"
+                    echo "Commit: ${env.GIT_COMMIT}"
+                    echo "Short Commit: ${env.GIT_COMMIT_SHORT}"
                     echo "==== Checkout completed successfully ===="
                 }
             }
@@ -197,18 +202,18 @@ pipeline {
                     echo "==== STAGE: Build Docker Image ===="
                     echo "Image name: ${DOCKER_IMAGE_NAME}"
                     echo "Build number: ${env.BUILD_NUMBER}"
-                    echo "Git Commit: ${env.GIT_COMMIT}"
+                    echo "Git Commit: ${env.GIT_COMMIT_SHORT}"
 
                     // Verify Dockerfile exists before attempting build
                     if (fileExists('Dockerfile')) {
                         echo "Building Docker image..."
                         // Build image using Jenkins Docker plugin
-                        // Tag with commit hash for traceability and immutability
-                        def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}")
+                        // Tag with short commit hash for traceability and readability
+                        def customImage = docker.build("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT_SHORT}")
                         // Also tag as 'latest' for convenience in development
                         customImage.tag('latest')
                         echo "==== Docker image built successfully ===="
-                        echo "Tagged as: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                        echo "Tagged as: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT_SHORT}"
                         echo "Tagged as: ${DOCKER_IMAGE_NAME}:latest"
                     } else {
                         // Dockerfile missing - warn but don't fail pipeline
@@ -227,14 +232,14 @@ pipeline {
             steps {
                 script {
                     echo "==== STAGE: Container Security Scan ===="
-                    echo "Scanning image: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                    echo "Scanning image: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT_SHORT}"
                     echo "Severity threshold: ${SEVERITY_THRESHOLD}"
 
                     try {
                         // Scan Docker image for OS and application vulnerabilities
                         // Checks base image, installed packages, and application dependencies
                         // || true: Continue even if vulnerabilities found (non-blocking scan)
-                        sh "snyk container test ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT} --severity-threshold=${SEVERITY_THRESHOLD} --json > snyk-container-report.json 2>&1 | tee snyk-container-scan.log || true"
+                        sh "snyk container test ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT_SHORT} --severity-threshold=${SEVERITY_THRESHOLD} --json > snyk-container-report.json 2>&1 | tee snyk-container-scan.log || true"
                         echo "==== Container security scan completed ===="
                     } catch (Exception e) {
                         // Don't fail pipeline on scan errors - allows deployment to continue
@@ -263,12 +268,12 @@ pipeline {
                         // withRegistry: Automatically handles docker login/logout
                         docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS_ID) {
                             // Push commit-tagged image for version tracking
-                            docker.image("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}").push()
+                            docker.image("${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT_SHORT}").push()
                             // Push latest tag for development/testing convenience
                             docker.image("${DOCKER_IMAGE_NAME}:latest").push()
                         }
                         echo "==== Images pushed successfully ===="
-                        echo "Pushed: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT}"
+                        echo "Pushed: ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT_SHORT}"
                         echo "Pushed: ${DOCKER_IMAGE_NAME}:latest"
                     } catch (Exception e) {
                         // Handle authentication or network failures gracefully
@@ -289,7 +294,7 @@ pipeline {
                 // Remove built images to free disk space
                 // || true: Continue even if removal fails (images may already be deleted)
                 sh """
-                    docker rmi ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT} || true
+                    docker rmi ${DOCKER_IMAGE_NAME}:${env.GIT_COMMIT_SHORT} || true
                     docker rmi ${DOCKER_IMAGE_NAME}:latest || true
                     docker system prune -f || true
                 """
